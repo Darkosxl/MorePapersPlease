@@ -10,6 +10,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from highlight_agent import call_openrouter_json, run_agentic_highlights
+
+
 app = FastAPI(title="MorePapersPlease")
 
 app.add_middleware(
@@ -24,35 +27,6 @@ PDF_DIR = DATA_DIR / "pdfs"
 TEXT_DIR = DATA_DIR / "text"
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 TEXT_DIR.mkdir(parents=True, exist_ok=True)
-
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-HIGHLIGHTS_PROMPT = """You are an academic research assistant embedded in a PDF reader. Find passages in the paper that answer the user's question and color-code them by category. Do NOT write any commentary or summary — the user wants to read the highlights themselves without bias.
-
-You receive the full text of a paper, organized by page. The user asks a question.
-
-Respond ONLY with valid JSON. No markdown, no code fences, no extra text. Schema:
-
-{
-  "legend": [
-    {"label": "Short label", "color": "#hexcolor"}
-  ],
-  "highlights": [
-    {
-      "text": "Exact verbatim substring from the paper",
-      "page": 1,
-      "color": "#hexcolor (must match one from legend)"
-    }
-  ]
-}
-
-Rules:
-- 2-5 distinct colors max, each with a meaningful category label.
-- "text" must be an EXACT verbatim substring from the paper. Copy precisely, do not paraphrase.
-- Each highlight needs the correct page number.
-- Include as many highlights as the question genuinely requires; err on the side of comprehensive.
-- If nothing relevant exists, return empty arrays.
-- NO answer field, NO commentary, NO annotations. Highlights only."""
 
 COMMENTARY_PROMPT = """You are an academic research assistant. The user has selected a passage from a paper and is asking a question about that passage specifically. Provide a focused commentary based on the selected passage.
 
@@ -159,134 +133,23 @@ async def ask_question(req: AskRequest):
     if req.mode == "commentary":
         if not req.selected_text or not req.selected_text.strip():
             raise HTTPException(400, "Commentary mode requires selected_text.")
-        system_prompt = COMMENTARY_PROMPT
         user_message = (
             f"Selected passage from the paper:\n\"\"\"\n{req.selected_text.strip()}\n\"\"\"\n\n"
             f"User question: {req.question}"
         )
-    else:
-        full_text = ""
-        for page_data in extracted:
-            full_text += f"\n--- PAGE {page_data['page']} ---\n"
-            for block in page_data["blocks"]:
-                full_text += block["text"] + "\n"
-        system_prompt = HIGHLIGHTS_PROMPT
-        user_message = f"Paper text:\n{full_text}\n\nUser question: {req.question}"
-
-    headers = {
-        "Authorization": f"Bearer {req.api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "MorePapersPlease",
-    }
-
-    payload = {
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 4000,
-    }
-
-    result = None
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        for attempt in range(3):
-            response = await client.post(OPENROUTER_URL, json=payload, headers=headers)
-
-            if response.status_code != 200:
-                detail = response.text[:500]
-                raise HTTPException(502, f"OpenRouter error ({response.status_code}): {detail}")
-
-            data = response.json()
-
-            # OpenRouter sometimes returns 200 with an embedded error
-            if isinstance(data, dict) and data.get("error"):
-                err = data["error"]
-                msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
-                raise HTTPException(502, f"OpenRouter: {msg}")
-
-            choices = data.get("choices") or []
-            if not choices:
-                raise HTTPException(502, f"OpenRouter returned no choices. Raw: {json.dumps(data)[:400]}")
-
-            message = choices[0].get("message") or {}
-            content = message.get("content")
-            if content is None:
-                content = message.get("reasoning_content") or message.get("reasoning") or ""
-            content = (content or "").strip()
-            if not content:
-                finish = choices[0].get("finish_reason", "?")
-                usage = data.get("usage", {})
-                raise HTTPException(
-                    502,
-                    f"Model '{req.model}' returned empty content (finish_reason={finish}, usage={usage}). "
-                    f"Possible causes: rate limit, no credits, content policy block, output truncation, "
-                    f"or the model genuinely returned nothing. Check OpenRouter dashboard.",
-                )
-
-            if content.startswith("```"):
-                lines = content.split("\n")
-                content = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-
-            try:
-                result = json.loads(content)
-                break
-            except json.JSONDecodeError:
-                if attempt == 2:
-                    raise HTTPException(500, "AI returned invalid JSON")
-
-    if result is None:
-        raise HTTPException(500, "AI returned invalid JSON")
-
-    if req.mode == "commentary":
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            result = await call_openrouter_json(
+                client,
+                req.model,
+                req.api_key,
+                COMMENTARY_PROMPT,
+                user_message,
+                max_tokens=1200,
+                temperature=0.3,
+            )
         return {"mode": "commentary", "answer": result.get("answer", "")}
 
-    enriched_highlights = []
-    for hl in result.get("highlights", []):
-        match_text = hl.get("text", "")
-        page = hl.get("page", 1)
-        color = hl.get("color", "#ffeb3b")
-
-        block_info = find_text_in_extracted(extracted, match_text)
-        enriched_highlights.append({
-            "text": match_text,
-            "page": block_info["page"] if block_info else page,
-            "bbox": block_info["bbox"] if block_info else None,
-            "color": color,
-        })
-
-    return {
-        "mode": "highlights",
-        "legend": result.get("legend", []),
-        "highlights": enriched_highlights,
-    }
-
-
-def find_text_in_extracted(extracted: list, search_text: str) -> dict | None:
-    search_clean = search_text.strip().lower()
-    search_start = search_clean[:60]
-
-    for page_data in extracted:
-        for block in page_data.get("blocks", []):
-            block_text = block["text"].strip().lower()
-            if search_start in block_text:
-                return {
-                    "page": page_data["page"],
-                    "bbox": block["bbox"],
-                }
-
-    for page_data in extracted:
-        for block in page_data.get("blocks", []):
-            block_text = block["text"].strip().lower()
-            if any(word in block_text for word in search_clean.split()[:3] if len(word) > 4):
-                return {
-                    "page": page_data["page"],
-                    "bbox": block["bbox"],
-                }
-
-    return None
+    return await run_agentic_highlights(req.question, req.model, req.api_key, extracted)
 
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
