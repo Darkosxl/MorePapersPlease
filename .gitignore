@@ -1,0 +1,40 @@
+# Local agent/config state
+.agents/
+.claude/
+.codex/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+backend/venv/
+
+# App runtime data
+backend/data/
+*.pdf
+
+# Local environment files
+.env
+.env.*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Unused design prototypes
+design*.html
+sketches/

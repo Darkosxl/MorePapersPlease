@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>More Papers Please</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+    --paper: #fdfaf3;
+    --ink: #2c2c2c;
+    --accent: #d35400;
+    --accent-dim: #b04e05;
+    --border: #d1cdc1;
+    --surface: #f7f3eb;
+    --surface-hover: #ece7dc;
+    --text-muted: #8a8275;
+    --radius: 4px;
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.07);
+    --shadow-md: 0 10px 30px rgba(0,0,0,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+    background: #e5e0d8;
+    color: var(--ink);
+    font-family: 'IBM Plex Serif', serif;
+    display: flex; justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 30px 20px;
+}
+
+/* wide viewport: right panel docks to right edge, body pads to avoid overlap */
+@media (min-width: 1300px) {
+    body { padding-right: 500px; }
+}
+/* narrow viewport: bottom strip 22vh, body pads bottom (account for min-height) */
+@media (max-width: 1299px) {
+    body { padding-bottom: max(calc(28vh + 30px), 280px); }
+}
+
+.app-shell {
+    background: var(--paper);
+    width: 100%;
+    max-width: 1050px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    position: relative;
+    border-radius: var(--radius);
+}
+
+/* ── HEADER ── */
+.header {
+    text-align: center;
+    padding: 24px 40px 16px;
+    border-bottom: 4px double var(--ink);
+    position: relative;
+}
+.masthead {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    color: var(--ink);
+}
+.masthead span { font-weight: 300; color: var(--text-muted); }
+.sub-header {
+    display: flex; justify-content: space-between;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    border-top: 1px solid var(--ink);
+    padding: 5px 0; margin-top: 8px;
+    color: var(--text-muted);
+}
+.sub-header strong { color: var(--ink); }
+
+/* ── HAMBURGER ── */
+.hamburger-btn {
+    position: absolute; left: 20px; top: 20px;
+    z-index: 1100; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;
+    background: var(--ink); color: var(--paper);
+    border: none; padding: 10px 18px; border-radius: var(--radius);
+    transition: background 0.2s;
+}
+.hamburger-btn:hover { background: #444; }
+
+/* ── SIDEBAR ── */
+.overlay { /* placeholder for click-outside */ }
+
+.sidebar {
+    position: fixed; left: 0; top: 0; height: 100vh; width: 310px;
+    background: var(--paper); border-right: 2px solid var(--ink);
+    z-index: 1200; transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+    box-shadow: 6px 0 25px rgba(0,0,0,0.12);
+    font-family: 'Space Grotesk', sans-serif;
+}
+.sidebar.open { transform: translateX(0); }
+
+.sidebar-header {
+    padding: 22px 20px 14px;
+    border-bottom: 2px solid var(--ink);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.sidebar-header h2 {
+    font-size: 1.1rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.close-sidebar {
+    cursor: pointer; background: none; border: none;
+    font-size: 1.3rem; color: var(--ink); padding: 4px;
+}
+
+.sidebar-section {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.sidebar-label {
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--text-muted); margin-bottom: 8px;
+}
+
+/* settings */
+.setting-row {
+    display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+}
+.setting-row label {
+    font-size: 0.7rem; font-weight: 600; width: 55px; flex-shrink: 0;
+}
+.setting-row input, .setting-row select {
+    flex: 1; font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.73rem; padding: 7px 10px;
+    border: 1px solid var(--border); background: #fefdf9;
+    border-radius: var(--radius);
+}
+.setting-row input:focus, .setting-row select:focus {
+    outline: none; border-color: var(--ink);
+}
+
+.sidebar-btn {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; padding: 8px 16px;
+    border: 1px solid var(--ink); background: transparent;
+    cursor: pointer; border-radius: var(--radius); transition: 0.2s;
+}
+.sidebar-btn:hover { background: var(--ink); color: var(--paper); }
+.sidebar-btn.primary { background: var(--ink); color: var(--paper); }
+.sidebar-btn.primary:hover { background: #444; }
+
+/* pdf list */
+.pdf-list { flex: 1; overflow-y: auto; padding: 8px 20px; }
+.pdf-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px dotted var(--border);
+    cursor: pointer; transition: 0.15s;
+}
+.pdf-list-item:hover { color: var(--accent); padding-left: 6px; }
+.pdf-item-title { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; }
+.pdf-item-meta { font-size: 0.63rem; color: var(--text-muted); }
+.delete-pdf {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 1rem; padding: 2px 6px;
+    visibility: hidden;
+}
+.pdf-list-item:hover .delete-pdf { visibility: visible; }
+.delete-pdf:hover { color: #c0392b; }
+
+.sidebar-footer {
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    font-size: 0.6rem; color: var(--text-muted); text-align: center;
+    letter-spacing: 1px;
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.73rem; font-weight: 600;
+}
+.toolbar select {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.7rem; font-weight: 600;
+    padding: 6px 12px; border: 1px solid var(--border);
+    background: var(--paper); border-radius: var(--radius);
+}
+.model-label {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 0.6rem;
+}
+
+/* ── MAIN AREA ── */
+.main-area {
+    flex: 1; overflow-y: auto; min-height: 50vh;
+    position: relative; padding: 24px;
+}
+
+/* ── DROPZONE ── */
+.dropzone {
+    border: 3px dashed var(--border);
+    padding: 80px 40px; text-align: center; border-radius: var(--radius);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    transition: 0.25s; cursor: pointer;
+    margin: 0 auto; width: 100%;
+}
+.dropzone:hover, .dropzone.active {
+    border-color: var(--ink); color: var(--ink);
+    background: var(--surface-hover);
+}
+.dropzone.loading {
+    border-style: solid; border-color: var(--accent);
+    color: var(--accent); cursor: wait;
+}
+
+/* ── PDF PAGES ── */
+.pdf-page-container {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+}
+.pdf-page-wrapper {
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    background: #fff;
+}
+.pdf-page-wrapper canvas {
+    display: block;
+}
+
+/* highlight layer (under text layer so selection works on top) */
+.highlight-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 2;
+}
+.highlight-rect {
+    position: absolute;
+    border: 2px solid currentColor;
+    background: transparent;
+    box-shadow: 0 0 0 1px rgba(253, 250, 243, 0.75);
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+.highlight-rect.focus {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(253, 250, 243, 0.95);
+    animation: highlight-pulse 1.2s ease-out 1;
+}
+@keyframes highlight-pulse {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.025); }
+    100% { transform: scale(1); }
+}
+
+/* pdf.js text layer (selectable transparent text) */
+.text-layer {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    line-height: 1;
+    z-index: 4;
+    opacity: 1;
+    user-select: text;
+}
+.text-layer > span,
+.text-layer > br {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+.text-layer ::selection {
+    background: rgba(211, 84, 0, 0.30);
+    color: transparent;
+}
+.text-layer ::-moz-selection {
+    background: rgba(211, 84, 0, 0.30);
+    color: transparent;
+}
+
+/* ── LEGEND ── */
+.legend-bar {
+    display: flex; gap: 18px; align-items: center;
+    flex-wrap: wrap; justify-content: center;
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted);
+    background: var(--surface);
+}
+.legend-bar .legend-entry {
+    display: flex; align-items: center; gap: 6px;
+}
+.legend-bar .legend-swatch {
+    width: 12px; height: 12px;
+    border: 1px solid var(--ink);
+    border-radius: 2px; flex-shrink: 0;
+}
+
+/* ── MODEL COMBOBOX ── */
+.model-combobox {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.7rem; font-weight: 600;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    border-radius: var(--radius);
+    color: var(--ink);
+    min-width: 240px;
+}
+.model-combobox:focus { outline: none; border-color: var(--ink); }
+.sidebar-section .model-combobox { width: 100%; min-width: 0; }
+.model-status {
+    font-size: 0.6rem; color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* ── ASSISTANT DOCK (highlight index + chat) ── */
+.assistant-dock {
+    position: fixed;
+    z-index: 100;
+    display: grid;
+    gap: 10px;
+}
+.highlight-index {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.highlight-index-header {
+    padding: 12px 10px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--ink);
+    flex-shrink: 0;
+}
+.highlight-index-list {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    overflow-y: auto;
+    min-height: 0;
+}
+.highlight-index-empty {
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    line-height: 1.35;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px;
+}
+.highlight-index-item {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 7px;
+    width: 100%;
+    align-items: center;
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: var(--radius);
+    padding: 7px 6px;
+    cursor: pointer;
+    transition: background 0.16s, border-color 0.16s, transform 0.16s;
+}
+.highlight-index-item:hover,
+.highlight-index-item:focus-visible {
+    background: var(--paper);
+    border-color: var(--ink);
+    outline: none;
+    transform: translateX(-2px);
+}
+.highlight-index-item.active {
+    border-color: var(--ink);
+    background: #fefdf9;
+}
+.highlight-index-swatch {
+    width: 14px;
+    height: 34px;
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+}
+.highlight-index-copy {
+    min-width: 0;
+}
+.highlight-index-page {
+    display: block;
+    color: var(--accent-dim);
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+.highlight-index-label {
+    display: block;
+    color: var(--ink);
+    font-size: 0.58rem;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── RIGHT PANEL (chat + ask) ── */
+.right-panel {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+.right-panel-header {
+    padding: 12px 18px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--surface);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 0.85rem;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    flex-shrink: 0;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.right-panel-header .panel-meta {
+    font-weight: 400; font-size: 0.6rem;
+    color: var(--text-muted); letter-spacing: 1px;
+}
+.right-panel .chat-panel {
+    flex: 1; min-height: 0;
+    max-height: none;
+    border-top: none;
+    overflow-y: auto;
+}
+.right-panel .selection-strip { flex-shrink: 0; }
+.right-panel .chat-input-row { flex-shrink: 0; }
+@media (min-width: 1300px) {
+    .assistant-dock {
+        top: 30px; right: 20px;
+        width: 460px;
+        height: calc(100vh - 60px);
+        grid-template-columns: 110px 340px;
+    }
+    .right-panel,
+    .highlight-index {
+        border-radius: var(--radius);
+    }
+}
+@media (max-width: 1299px) {
+    .assistant-dock {
+        bottom: 0; left: 0; right: 0;
+        height: 28vh; min-height: 250px;
+        grid-template-columns: minmax(92px, 24vw) minmax(0, 1fr);
+        gap: 0;
+    }
+    .right-panel,
+    .highlight-index {
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .right-panel {
+        border-right: none; border-bottom: none;
+        border-top: 2px solid var(--ink);
+        border-left: 1px solid var(--border);
+    }
+    .highlight-index {
+        border-left: none; border-bottom: none;
+        border-top: 2px solid var(--ink);
+    }
+}
+@media (max-width: 700px) {
+    .chat-panel { padding: 12px 10px; }
+    .right-panel-header,
+    .selection-strip { padding-left: 10px; padding-right: 10px; }
+    .chat-input-row {
+        padding: 8px 10px 12px;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+    .chat-input-row input { flex-basis: 100%; }
+    .chat-input-row button { margin-left: auto; }
+    .highlight-index-header { padding: 10px 8px; font-size: 0.58rem; }
+    .highlight-index-list { padding: 7px 6px; gap: 6px; }
+    .highlight-index-item {
+        grid-template-columns: 12px minmax(0, 1fr);
+        gap: 5px;
+        padding: 6px 4px;
+    }
+    .highlight-index-swatch { width: 11px; height: 30px; }
+    .highlight-index-label { font-size: 0.54rem; }
+}
+
+/* ── CHAT PANEL (bottom) ── */
+.chat-panel {
+    border-top: 2px solid var(--ink);
+    padding: 16px 24px 20px;
+    background: var(--surface);
+    max-height: 220px; overflow-y: auto;
+}
+.chat-panel.messages {
+    font-family: 'IBM Plex Serif', serif;
+}
+.chat-message {
+    margin-bottom: 10px;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    font-size: 0.85rem; line-height: 1.5;
+}
+.chat-message.user {
+    background: var(--ink); color: var(--paper);
+    margin-right: auto; max-width: 85%;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem; font-weight: 500;
+    position: relative;
+}
+.chat-message.user.highlight-run {
+    cursor: pointer;
+}
+.chat-message.user.highlight-run:hover,
+.chat-message.user.highlight-run:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.chat-message.user.highlight-run.active {
+    box-shadow: inset 4px 0 0 var(--accent);
+}
+.chat-message.user.highlight-run.active::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 10px solid var(--accent);
+}
+.chat-message.ai {
+    background: #efe9dd; color: var(--ink);
+    border-left: 3px solid var(--accent);
+}
+.chat-message.pending {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+.thinking-mark {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+}
+.thinking-mark span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.35;
+    animation: thinking-dot 1s ease-in-out infinite;
+}
+.thinking-mark span:nth-child(2) { animation-delay: 0.14s; }
+.thinking-mark span:nth-child(3) { animation-delay: 0.28s; }
+@keyframes thinking-dot {
+    0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+    35% { opacity: 1; transform: translateY(-3px); }
+}
+.chat-message.meta {
+    background: transparent; color: var(--text-muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    padding: 4px 0; margin-bottom: 6px;
+}
+.chat-message .ai-highlight-link {
+    color: var(--accent-dim); cursor: pointer;
+    font-weight: 600; text-decoration: underline;
+}
+
+/* selection indicator strip */
+.selection-strip {
+    padding: 6px 24px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted);
+    display: flex; gap: 10px; align-items: center;
+}
+.selection-strip.has-selection { color: var(--accent-dim); }
+.selection-strip .sel-preview {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 0.72rem; font-style: italic;
+    text-transform: none; letter-spacing: 0;
+    color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; min-width: 0;
+}
+.commentary-toggle {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted);
+    cursor: pointer; user-select: none;
+    padding: 0 6px;
+}
+.commentary-toggle input[type=checkbox] { cursor: pointer; }
+.commentary-toggle.active { color: var(--accent-dim); }
+
+/* input row */
+.chat-input-row {
+    display: flex; gap: 10px; padding: 10px 24px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    align-items: center;
+}
+.chat-input-row input {
+    flex: 1;
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 0.9rem; padding: 10px 14px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    border-radius: var(--radius);
+}
+.chat-input-row input:focus { outline: none; border-color: var(--ink); }
+.chat-input-row button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.5px; font-size: 0.7rem;
+    padding: 10px 22px;
+    background: var(--ink); color: var(--paper);
+    border: none; border-radius: var(--radius);
+    cursor: pointer; transition: 0.2s;
+}
+.chat-input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-input-row button:hover:not(:disabled) { background: var(--accent-dim); }
+
+/* spinner */
+.spinner { display: inline-block; width: 10px; height: 10px;
+    border: 2px solid var(--paper);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .spinner,
+    .thinking-mark span,
+    .highlight-rect.focus {
+        animation: none;
+    }
+    .highlight-index-item {
+        transition: none;
+    }
+}
+
+/* empty state */
+.placeholder-hint {
+    text-align: center; padding: 40px 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* status indicator */
+.status-dot { display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; margin-right: 4px; }
+.status-dot.ok { background: #27ae60; }
+.status-dot.missing { background: #e74c3c; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Archives</h2>
+            <button class="close-sidebar" onclick="toggleSidebar()">&times;</button>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">API Key</div>
+            <div class="setting-row" style="align-items:flex-start;">
+                <label>Key:</label>
+                <input type="password" id="api-key-input" placeholder="sk-or-..." autocomplete="off" spellcheck="false" />
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; font-size:0.65rem; margin-top:-4px; color:var(--text-muted);">
+                <span class="status-dot" id="api-status-dot"></span>
+                <span id="api-status-text">No key set</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">Default Model</div>
+            <input id="default-model" class="model-combobox" list="model-options" placeholder="Search OpenRouter models…" autocomplete="off" spellcheck="false" onchange="saveDefaultModel()" />
+            <div class="model-status" id="model-status">Models: not loaded</div>
+        </div>
+
+        <div class="pdf-list" id="pdf-list">
+            <div class="placeholder-hint" style="font-size:0.65rem;">No papers yet</div>
+        </div>
+
+        <div class="sidebar-footer">More Papers Please &middot; Est. 2026</div>
+    </aside>
+
+    <!-- HEADER -->
+    <header class="header">
+        <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Open archive">&#9776; Archive</button>
+        <div class="masthead">More Papers <span>Please</span></div>
+        <div class="sub-header">
+            <span>Vol. LXIV &middot; No. 12</span>
+            <span id="header-date"><strong>Monday, May 04, 2026</strong></span>
+            <span>Price: Two Cents</span>
+        </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <span class="model-label">Model</span>
+        <input id="current-model" class="model-combobox" list="model-options" placeholder="Click + type to filter (e.g. deepseek)…" autocomplete="off" spellcheck="false" onchange="document.getElementById('default-model').value=this.value; saveDefaultModel();" />
+        <span class="model-status" id="toolbar-model-status" style="margin:0;">…</span>
+        <button class="sidebar-btn" id="refresh-models-btn" onclick="refreshModels()" title="Force refresh model list" style="padding:4px 10px; font-size:0.6rem;">↻</button>
+        <span id="pdf-filename" style="margin-left:auto;color:var(--text-muted);font-size:0.7rem;">&mdash;</span>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main-area" id="main-area">
+        <div class="dropzone" id="dropzone">
+            📄 Drop your academic paper here<br />
+            <span style="font-size:0.7rem;color:var(--text-muted);">or click to browse &hellip;</span>
+        </div>
+        <input type="file" id="file-input" accept=".pdf" style="display:none;" />
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend-bar" id="legend-bar">
+        <span style="font-weight:400;">No highlights yet. Ask a question in the side panel to start.</span>
+    </div>
+</div>
+
+<!-- ASSISTANT DOCK: highlight index + chat + ask -->
+<div class="assistant-dock" id="assistant-dock">
+    <aside class="highlight-index" aria-label="Highlight index">
+        <div class="highlight-index-header">Highlights</div>
+        <div class="highlight-index-list" id="highlight-index-list">
+            <div class="highlight-index-empty">No highlights yet</div>
+        </div>
+    </aside>
+
+    <aside class="right-panel" id="right-panel">
+        <div class="right-panel-header">
+            <span>Ask</span>
+            <span class="panel-meta">
+                <span id="panel-meta"></span>
+                <button class="sidebar-btn" id="inspect-btn" onclick="inspectExtractedText()" style="padding:3px 8px; font-size:0.55rem; margin-left:8px; display:none;">INSPECT</button>
+            </span>
+        </div>
+        <div class="chat-panel messages" id="chat-messages"></div>
+        <div class="selection-strip" id="selection-strip">
+            <span id="selection-status">No selection — drag-select text in the paper to enable commentary</span>
+            <span class="sel-preview" id="selection-preview"></span>
+            <button class="sidebar-btn" id="selection-clear" onclick="clearSelection()" style="display:none; padding:4px 10px; font-size:0.6rem;">CLEAR</button>
+        </div>
+        <div class="chat-input-row">
+            <input id="question-input" type="text" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')askQuestion()" />
+            <label class="commentary-toggle" id="commentary-toggle" title="Comment on selected text only">
+                <input type="checkbox" id="commentary-cb" /> COMMENT
+            </label>
+            <button id="ask-btn" onclick="askQuestion()">ASK</button>
+        </div>
+    </aside>
+</div>
+
+<datalist id="model-options"></datalist>
+
+<script type="module">
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+
+const API = ''; // same-origin — backend serves at /
+
+const LS = {
+    get(k, dflt=null) { try { return JSON.parse(localStorage.getItem(k)) ?? dflt; } catch { return dflt; } },
+    set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+};
+
+let _pdfDoc = null;
+let _currentPdfId = null;
+let _pageCanvases = [];
+let _pageScales = [];
+let _highlightRuns = [];
+let _activeHighlightRunId = null;
+let _currentLegend = [];
+let _currentHighlights = [];
+let _highlightTargets = new Map();
+let _currentSelection = '';
+let _pendingMessage = null;
+let _highlightFocusTimer = null;
+
+// expose to inline onclick/onchange
+window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
+window.saveDefaultModel = () => {
+    LS.set('default_model', document.getElementById('default-model').value);
+    document.getElementById('current-model').value = document.getElementById('default-model').value;
+};
+
+// ── PDF list ──
+function loadPdfList() {
+    const list = LS.get('pdf_list', []);
+    const container = document.getElementById('pdf-list');
+    if (!list.length) {
+        container.innerHTML = '<div class="placeholder-hint" style="font-size:0.65rem;">No papers yet</div>';
+        return;
+    }
+    container.innerHTML = list.map(p => `
+        <div class="pdf-list-item" data-id="${p.id}">
+            <div>
+                <div class="pdf-item-title">${esc(p.name)}</div>
+                <div class="pdf-item-meta">${p.pages} pp &middot; ${p.date}</div>
+            </div>
+            <button class="delete-pdf" data-id="${p.id}" title="Remove">&times;</button>
+        </div>
+    `).join('');
+    container.querySelectorAll('.pdf-list-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-pdf')) {
+                e.stopPropagation();
+                removePdf(el.dataset.id);
+                return;
+            }
+            loadPdf(el.dataset.id);
+            toggleSidebar();
+        });
+    });
+    container.querySelectorAll('.delete-pdf').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removePdf(btn.dataset.id);
+        });
+    });
+}
+
+function savePdfMeta(id, name, pages) {
+    const list = LS.get('pdf_list', []);
+    const existing = list.findIndex(p => p.id === id);
+    const entry = { id, name, pages, date: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric'}) };
+    if (existing >= 0) list[existing] = entry;
+    else list.unshift(entry);
+    LS.set('pdf_list', list);
+    loadPdfList();
+}
+
+async function removePdf(id) {
+    const list = LS.get('pdf_list', []).filter(p => p.id !== id);
+    LS.set('pdf_list', list);
+    LS.set(`chat_${id}`, null);
+    LS.set(`highlights_${id}`, null);
+    try { await fetch(`/api/pdf/${id}`, { method: 'DELETE' }); } catch {}
+    if (_currentPdfId === id) { clearViewer(); }
+    loadPdfList();
+}
+
+function getChatHistory(id) {
+    return LS.get(`chat_${id}`, []);
+}
+function saveChatHistory(id, messages) {
+    LS.set(`chat_${id}`, messages);
+}
+
+function makeRunId() {
+    return `run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeHighlightState(raw) {
+    if (!raw) return { activeRunId: null, runs: [] };
+
+    if (Array.isArray(raw.runs)) {
+        const runs = raw.runs.map((run, index) => ({
+            id: run.id || `run_${index}`,
+            question: run.question || run.title || 'Untitled prompt',
+            createdAt: run.createdAt || null,
+            legend: run.legend || [],
+            highlights: run.highlights || [],
+        }));
+        const activeRunId = runs.some(run => run.id === raw.activeRunId)
+            ? raw.activeRunId
+            : (runs[0]?.id || null);
+        return { activeRunId, runs };
+    }
+
+    if (Array.isArray(raw.highlights) && raw.highlights.length) {
+        return {
+            activeRunId: 'legacy',
+            runs: [{
+                id: 'legacy',
+                question: raw.question || 'Previous highlights',
+                createdAt: raw.createdAt || null,
+                legend: raw.legend || [],
+                highlights: raw.highlights || [],
+            }],
+        };
+    }
+
+    return { activeRunId: null, runs: [] };
+}
+
+function getHighlightState(id) {
+    return normalizeHighlightState(LS.get(`highlights_${id}`, null));
+}
+
+function saveHighlightState(id) {
+    LS.set(`highlights_${id}`, {
+        version: 2,
+        activeRunId: _activeHighlightRunId,
+        runs: _highlightRuns,
+    });
+}
+
+// ── API helpers ──
+function getApiKey() {
+    return document.getElementById('api-key-input').value.trim();
+}
+function getModel() {
+    return document.getElementById('current-model').value;
+}
+
+// ── MODEL LIST (OpenRouter) ──
+const MODELS_TTL_MS = 30 * 24 * 3600 * 1000; // 30 days
+const MODELS_URL = 'https://openrouter.ai/api/v1/models';
+
+function setModelStatus(text, isError = false) {
+    for (const id of ['model-status', 'toolbar-model-status']) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.textContent = text;
+        el.style.color = isError ? '#c0392b' : '';
+    }
+}
+
+function populateModelDatalist(models) {
+    const dl = document.getElementById('model-options');
+    if (!dl) return;
+    dl.innerHTML = models.map(m => {
+        const id = esc(m.id || '');
+        const label = m.name && m.name !== m.id ? `${m.id} — ${m.name}` : m.id;
+        return `<option value="${id}">${esc(label)}</option>`;
+    }).join('');
+    setModelStatus(`${models.length} models`);
+}
+
+async function ensureModelList(forceRefresh = false) {
+    const cached = LS.get('openrouter_models');
+    const fresh = cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < MODELS_TTL_MS;
+    if (cached && cached.data && fresh && !forceRefresh) {
+        populateModelDatalist(cached.data);
+        console.log(`[models] using cached list: ${cached.data.length} entries (age ${Math.round((Date.now() - cached.fetchedAt)/3600/1000)}h)`);
+        return;
+    }
+    setModelStatus('fetching…');
+    console.log('[models] fetching from', MODELS_URL);
+    try {
+        const resp = await fetch(MODELS_URL);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const json = await resp.json();
+        const data = (json.data || []).map(m => ({ id: m.id, name: m.name || m.id })).filter(m => m.id);
+        if (!data.length) throw new Error('empty list');
+        data.sort((a, b) => a.id.localeCompare(b.id));
+        LS.set('openrouter_models', { fetchedAt: Date.now(), data });
+        populateModelDatalist(data);
+        console.log(`[models] fetched ${data.length} models`);
+    } catch (e) {
+        console.error('[models] fetch failed', e);
+        setModelStatus(`fetch failed: ${e.message}`, true);
+        if (cached && cached.data) populateModelDatalist(cached.data); // stale fallback
+    }
+}
+
+window.refreshModels = () => {
+    LS.set('openrouter_models', null);
+    ensureModelList(true);
+};
+
+// ── SIDEBAR SETUP ──
+(function setupSidebar() {
+    const savedKey = LS.get('api_key', '');
+    document.getElementById('api-key-input').value = savedKey;
+    updateApiStatus(savedKey);
+    document.getElementById('api-key-input').addEventListener('input', () => {
+        const val = document.getElementById('api-key-input').value.trim();
+        LS.set('api_key', val);
+        updateApiStatus(val);
+    });
+    const savedModel = LS.get('default_model', 'deepseek/deepseek-v4-pro');
+    document.getElementById('default-model').value = savedModel;
+    document.getElementById('current-model').value = savedModel;
+    ensureModelList();
+    loadPdfList();
+})();
+
+function updateApiStatus(key) {
+    const dot = document.getElementById('api-status-dot');
+    const txt = document.getElementById('api-status-text');
+    if (key && key.startsWith('sk-or-')) {
+        dot.className = 'status-dot ok';
+        txt.textContent = 'Key set';
+    } else {
+        dot.className = 'status-dot missing';
+        txt.textContent = key ? 'Invalid format (needs sk-or-...)' : 'No key set';
+    }
+}
+
+function esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ── DROPZONE ──
+function setupDropzone() {
+    const dz = document.getElementById('dropzone');
+    const fi = document.getElementById('file-input');
+    if (!dz || !fi) return;
+
+    dz.addEventListener('click', () => fi.click());
+    fi.addEventListener('change', () => { if (fi.files[0]) handleFile(fi.files[0]); });
+
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('active'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('active'));
+    dz.addEventListener('drop', (e) => {
+        e.preventDefault(); dz.classList.remove('active');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+}
+setupDropzone();
+
+// allow dropping anywhere in body — bind once
+document.body.addEventListener('dragover', (e) => { e.preventDefault(); });
+document.body.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') handleFile(file);
+});
+
+async function handleFile(file) {
+    const dz = document.getElementById('dropzone');
+    dz.textContent = '📄 Processing ...';
+    dz.classList.add('loading');
+    _highlightRuns = [];
+    _activeHighlightRunId = null;
+    _currentLegend = [];
+    _currentHighlights = [];
+    _highlightTargets = new Map();
+    renderChatPromptSelection();
+    renderHighlightSurfaces([], []);
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+        const resp = await fetch('/api/upload', { method: 'POST', body: form });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        _currentPdfId = data.pdf_id;
+        savePdfMeta(data.pdf_id, file.name, data.page_count);
+        await renderPdf(data.pdf_id);
+        document.getElementById('pdf-filename').textContent = file.name;
+        document.getElementById('question-input').disabled = false;
+        setSelection('');
+        updateAskButtonState();
+        loadChatHistory(data.pdf_id);
+        const kchars = data.char_count >= 1000 ? `${(data.char_count/1000).toFixed(1)}K` : `${data.char_count}`;
+        addChatMessage('meta', `→ Parsed: ${data.page_count}p · ${data.block_count} blocks · ${kchars} chars`);
+        updatePanelMeta(data);
+    } catch (e) {
+        dz.textContent = `📄 Error: ${e.message}. Try again.`;
+        dz.classList.remove('loading');
+        dz.style.color = '#c0392b';
+    }
+}
+
+async function loadPdf(id) {
+    _currentPdfId = id;
+    const savedHighlights = getHighlightState(id);
+    _highlightRuns = savedHighlights.runs || [];
+    _activeHighlightRunId = savedHighlights.activeRunId || null;
+    const activeRun = getActiveHighlightRun();
+    _currentLegend = activeRun?.legend || [];
+    _currentHighlights = activeRun?.highlights || [];
+    _highlightTargets = new Map();
+    renderChatPromptSelection();
+    renderHighlightSurfaces(_currentLegend, _currentHighlights);
+    document.getElementById('chat-messages').innerHTML = '';
+    document.getElementById('question-input').disabled = false;
+    setSelection('');
+    loadChatHistory(id);
+    await renderPdf(id);
+
+    const list = LS.get('pdf_list', []);
+    const entry = list.find(p => p.id === id);
+    document.getElementById('pdf-filename').textContent = entry ? entry.name : '—';
+    updatePanelMeta({ page_count: entry?.pages, block_count: '?' });
+    updateAskButtonState();
+}
+
+async function renderPdf(id) {
+    const main = document.getElementById('main-area');
+    main.innerHTML = '<div class="placeholder-hint">Loading PDF pages&hellip;</div>';
+
+    const pdfUrl = `/api/pdf/${id}`;
+    try {
+        _pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
+        _currentPdfId = id;
+        main.innerHTML = '<div class="pdf-page-container" id="pdf-page-container"></div>';
+        await renderAllPages();
+    } catch (e) {
+        main.innerHTML = `<div class="placeholder-hint" style="color:#c0392b;">PDF not found. It may have been deleted.</div>`;
+    }
+}
+
+async function renderAllPages() {
+    const container = document.getElementById('pdf-page-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    _pageCanvases = [];
+    _pageScales = [];
+    const containerWidth = container.parentElement.clientWidth - 28;
+    const maxWidth = Math.min(containerWidth, 800);
+
+    for (let i = 1; i <= _pdfDoc.numPages; i++) {
+        const page = await _pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = maxWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+
+        _pageScales.push(scale);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pdf-page-wrapper';
+        wrapper.style.width = scaledViewport.width + 'px';
+        wrapper.style.height = scaledViewport.height + 'px';
+        wrapper.dataset.page = i;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+        wrapper.appendChild(canvas);
+
+        const hlLayer = document.createElement('div');
+        hlLayer.className = 'highlight-layer';
+        hlLayer.id = `hl-layer-${i}`;
+        wrapper.appendChild(hlLayer);
+
+        // pdf.js text layer — selectable transparent text on top of canvas
+        const textLayerDiv = document.createElement('div');
+        textLayerDiv.className = 'text-layer';
+        textLayerDiv.style.width = scaledViewport.width + 'px';
+        textLayerDiv.style.height = scaledViewport.height + 'px';
+        textLayerDiv.style.setProperty('--scale-factor', String(scale));
+        textLayerDiv.dataset.page = i;
+        wrapper.appendChild(textLayerDiv);
+
+        const textContent = await page.getTextContent();
+        try {
+            if (pdfjsLib.TextLayer) {
+                const tl = new pdfjsLib.TextLayer({
+                    textContentSource: textContent,
+                    container: textLayerDiv,
+                    viewport: scaledViewport,
+                });
+                await tl.render();
+            } else if (pdfjsLib.renderTextLayer) {
+                await pdfjsLib.renderTextLayer({
+                    textContentSource: textContent,
+                    container: textLayerDiv,
+                    viewport: scaledViewport,
+                }).promise;
+            } else {
+                console.warn('No TextLayer API available in pdf.js build');
+            }
+        } catch (err) {
+            console.warn('TextLayer render failed for page', i, err);
+        }
+
+        _pageCanvases.push({ wrapper, canvas, hlLayer, textLayerDiv, viewport: scaledViewport, pageNum: i, originalVp: viewport });
+
+        container.appendChild(wrapper);
+    }
+
+    if (_currentHighlights.length) applyHighlights(_currentHighlights);
+}
+
+// ── HIGHLIGHTS ──
+function bboxToViewport(bbox, viewport) {
+    // PyMuPDF bbox: [x0, y0, x1, y1] in points, y-from-top
+    // viewport.scale: points → pixels; pixel origin also top-left
+    const [x0, y0, x1, y1] = bbox;
+    const s = viewport.scale;
+    return {
+        left: x0 * s,
+        top: y0 * s,
+        width: (x1 - x0) * s,
+        height: (y1 - y0) * s,
+    };
+}
+
+function applyHighlights(highlights) {
+    _currentHighlights = highlights;
+    _highlightTargets = new Map();
+    if (!_pageCanvases.length) return;
+
+    _pageCanvases.forEach(p => { p.hlLayer.innerHTML = ''; });
+
+    highlights.forEach((hl, index) => {
+        const pageNum = hl.page;
+        const bbox = hl.bbox;
+        const color = hl.color || '#ffeb3b';
+        if (!bbox || !Array.isArray(bbox) || bbox.length !== 4) return;
+
+        const pageEntry = _pageCanvases.find(p => p.pageNum === pageNum);
+        if (!pageEntry) return;
+
+        const pos = bboxToViewport(bbox, pageEntry.viewport);
+
+        const rect = document.createElement('div');
+        rect.className = 'highlight-rect';
+        rect.dataset.highlightIndex = String(index);
+        rect.style.left = pos.left + 'px';
+        rect.style.top = pos.top + 'px';
+        rect.style.width = Math.max(pos.width, 20) + 'px';
+        rect.style.height = Math.max(pos.height, 4) + 'px';
+        rect.style.color = color;
+        pageEntry.hlLayer.appendChild(rect);
+        _highlightTargets.set(index, { rect, wrapper: pageEntry.wrapper });
+    });
+}
+
+function labelForColor(color) {
+    const entry = (_currentLegend || []).find(l => (l.color || '').toLowerCase() === (color || '').toLowerCase());
+    return entry ? entry.label : '';
+}
+
+function getActiveHighlightRun() {
+    return _highlightRuns.find(run => run.id === _activeHighlightRunId) || null;
+}
+
+function runLabel(run, index) {
+    return `Ask ${_highlightRuns.length - index}`;
+}
+
+function cleanPromptText(text) {
+    return (text || '').replace(/^\[comment\]\s*/i, '').trim();
+}
+
+function promptSignature(text) {
+    return cleanPromptText(text).toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function bindChatMessageToRun(el, runId) {
+    if (!el || !runId) return;
+    el.dataset.runId = runId;
+    el.classList.add('highlight-run');
+    el.tabIndex = 0;
+    el.title = 'Show highlights from this prompt';
+    el.onclick = () => selectHighlightRun(runId);
+    el.onkeydown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            selectHighlightRun(runId);
+        }
+    };
+}
+
+function renderChatPromptSelection() {
+    const userMessages = Array.from(document.querySelectorAll('.chat-message.user'));
+    const assigned = new Set(userMessages.map(el => el.dataset.runId).filter(Boolean));
+
+    userMessages.forEach(el => {
+        if (el.dataset.runId) return;
+        const sig = promptSignature(el.textContent);
+        const run = _highlightRuns.find(item => !assigned.has(item.id) && promptSignature(item.question) === sig);
+        if (run) {
+            bindChatMessageToRun(el, run.id);
+            assigned.add(run.id);
+        }
+    });
+
+    const unboundMessages = userMessages.filter(el => !el.dataset.runId);
+    const unassignedRuns = _highlightRuns.filter(run => !assigned.has(run.id));
+    const count = Math.min(unboundMessages.length, unassignedRuns.length);
+    for (let i = 0; i < count; i++) {
+        const el = unboundMessages[unboundMessages.length - 1 - i];
+        const run = unassignedRuns[i];
+        bindChatMessageToRun(el, run.id);
+        assigned.add(run.id);
+    }
+
+    userMessages.forEach(el => {
+        el.classList.toggle('active', el.dataset.runId === _activeHighlightRunId);
+    });
+}
+
+function selectHighlightRun(runId, persist = true) {
+    const run = _highlightRuns.find(item => item.id === runId);
+    if (!run) {
+        _activeHighlightRunId = null;
+        renderChatPromptSelection();
+        renderHighlightSurfaces([], []);
+        applyHighlights([]);
+        if (persist && _currentPdfId) saveHighlightState(_currentPdfId);
+        return;
+    }
+
+    _activeHighlightRunId = run.id;
+    renderChatPromptSelection();
+    renderHighlightSurfaces(run.legend || [], run.highlights || []);
+    applyHighlights(run.highlights || []);
+    if (persist && _currentPdfId) saveHighlightState(_currentPdfId);
+}
+
+function addHighlightRun(question, legend, highlights) {
+    const run = {
+        id: makeRunId(),
+        question: question || 'Untitled prompt',
+        createdAt: new Date().toISOString(),
+        legend: legend || [],
+        highlights: highlights || [],
+    };
+    _highlightRuns.unshift(run);
+    _activeHighlightRunId = run.id;
+    selectHighlightRun(run.id, false);
+    if (_currentPdfId) saveHighlightState(_currentPdfId);
+    return run;
+}
+
+function renderHighlightSurfaces(legend, highlights) {
+    _currentLegend = legend || [];
+    _currentHighlights = highlights || [];
+    renderLegendBar(_currentLegend, _currentHighlights);
+    renderHighlightIndex(_currentHighlights);
+}
+
+function renderLegendBar(legend, highlights) {
+    const bar = document.getElementById('legend-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    if (legend && legend.length) {
+        legend.forEach(l => {
+            const entry = document.createElement('div');
+            entry.className = 'legend-entry';
+
+            const swatch = document.createElement('span');
+            swatch.className = 'legend-swatch';
+            swatch.style.backgroundColor = l.color || '#ffeb3b';
+
+            const label = document.createElement('span');
+            label.textContent = l.label || 'Highlight';
+
+            entry.append(swatch, label);
+            bar.appendChild(entry);
+        });
+        return;
+    }
+
+    const msg = document.createElement('span');
+    msg.style.fontWeight = '400';
+    msg.textContent = highlights && highlights.length
+        ? `${highlights.length} highlight${highlights.length === 1 ? '' : 's'}`
+        : 'No highlights yet. Ask a question in the side panel to start.';
+    bar.appendChild(msg);
+}
+
+function renderHighlightIndex(highlights) {
+    const list = document.getElementById('highlight-index-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!highlights || !highlights.length) {
+        const empty = document.createElement('div');
+        empty.className = 'highlight-index-empty';
+        empty.textContent = _highlightRuns.length ? 'No highlights for selected prompt' : 'No highlights yet';
+        list.appendChild(empty);
+        return;
+    }
+
+    highlights.forEach((hl, index) => {
+        const color = hl.color || '#ffeb3b';
+        const label = labelForColor(color) || `Highlight ${index + 1}`;
+        const page = hl.page || '?';
+        const text = (hl.text || '').replace(/\s+/g, ' ').trim();
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'highlight-index-item';
+        btn.dataset.highlightIndex = String(index);
+        btn.title = `${label} · page ${page}${text ? `: ${text}` : ''}`;
+        btn.addEventListener('click', () => scrollToHighlight(index));
+
+        const swatch = document.createElement('span');
+        swatch.className = 'highlight-index-swatch';
+        swatch.style.backgroundColor = color;
+
+        const copy = document.createElement('span');
+        copy.className = 'highlight-index-copy';
+
+        const pageEl = document.createElement('span');
+        pageEl.className = 'highlight-index-page';
+        pageEl.textContent = `P${page}`;
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'highlight-index-label';
+        labelEl.textContent = label;
+
+        copy.append(pageEl, labelEl);
+        btn.append(swatch, copy);
+        list.appendChild(btn);
+    });
+}
+
+function scrollToHighlight(index) {
+    const hl = _currentHighlights[index];
+    if (!hl) return;
+
+    const target = _highlightTargets.get(index);
+    const fallbackPage = _pageCanvases.find(p => p.pageNum === hl.page);
+    const scrollTarget = target?.rect || fallbackPage?.wrapper;
+    if (!scrollTarget) return;
+
+    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+    document.querySelectorAll('.highlight-index-item.active').forEach(el => el.classList.remove('active'));
+    const indexItem = document.querySelector(`.highlight-index-item[data-highlight-index="${index}"]`);
+    if (indexItem) indexItem.classList.add('active');
+
+    document.querySelectorAll('.highlight-rect.focus').forEach(el => el.classList.remove('focus'));
+    if (target?.rect) {
+        target.rect.classList.add('focus');
+        clearTimeout(_highlightFocusTimer);
+        _highlightFocusTimer = setTimeout(() => target.rect.classList.remove('focus'), 1400);
+    }
+}
+
+// ── SELECTION TRACKING ──
+// Capture on mouseup only; keeps selection sticky after focus moves to input.
+function captureSelectionFromMouseup() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const text = sel.toString().trim();
+    if (!text) return;
+    const range = sel.getRangeAt(0);
+    const node = range.commonAncestorContainer;
+    const el = node.nodeType === 1 ? node : node.parentElement;
+    if (!el || !el.closest('.text-layer')) return;
+    setSelection(text);
+}
+
+function setSelection(text) {
+    _currentSelection = text;
+    const strip = document.getElementById('selection-strip');
+    const status = document.getElementById('selection-status');
+    const preview = document.getElementById('selection-preview');
+    const clearBtn = document.getElementById('selection-clear');
+    if (text) {
+        strip.classList.add('has-selection');
+        status.textContent = `${text.length} chars selected`;
+        preview.textContent = text.length > 200 ? text.slice(0, 200) + '…' : text;
+        clearBtn.style.display = '';
+    } else {
+        strip.classList.remove('has-selection');
+        status.textContent = 'No selection — drag-select text in the paper to enable commentary';
+        preview.textContent = '';
+        clearBtn.style.display = 'none';
+    }
+    updateAskButtonState();
+}
+
+document.addEventListener('mouseup', () => setTimeout(captureSelectionFromMouseup, 10));
+window.clearSelection = () => {
+    const s = window.getSelection();
+    if (s) s.removeAllRanges();
+    setSelection('');
+};
+
+function updatePanelMeta(data) {
+    const meta = document.getElementById('panel-meta');
+    const btn = document.getElementById('inspect-btn');
+    if (data && data.page_count) {
+        meta.textContent = `${data.page_count}p · ${data.block_count || '?'} blocks`;
+        btn.style.display = '';
+    } else {
+        meta.textContent = '';
+        btn.style.display = 'none';
+    }
+}
+
+window.inspectExtractedText = async function() {
+    if (!_currentPdfId) return;
+    try {
+        const r = await fetch(`/api/text/${_currentPdfId}`);
+        if (!r.ok) { alert('Failed to fetch extracted text'); return; }
+        const data = await r.json();
+        const w = window.open('', '_blank');
+        if (!w) { alert('Popup blocked. Allow popups to inspect.'); return; }
+        let totalBlocks = 0, totalChars = 0;
+        const pages = data.map(p => {
+            const blocks = (p.blocks || []).map(b => {
+                totalBlocks += 1; totalChars += (b.text || '').length;
+                return `<div style="margin:6px 0;padding:6px 10px;background:#fafafa;border-left:3px solid #ccc;"><small style="color:#888;">[${b.bbox.map(n => Math.round(n)).join(', ')}]</small><br>${b.text.replace(/[<&]/g, c => ({'<':'&lt;','&':'&amp;'}[c]))}</div>`;
+            }).join('');
+            return `<h3>Page ${p.page}</h3>${blocks}`;
+        }).join('');
+        w.document.write(`<!doctype html><html><head><title>Extracted Text — ${esc(_currentPdfId)}</title><style>body{font-family:monospace;max-width:900px;margin:30px auto;padding:0 20px;line-height:1.5;}h3{margin-top:24px;border-bottom:1px solid #ccc;padding-bottom:4px;}.summary{background:#fffae0;padding:10px 14px;border:1px solid #d4c98a;margin-bottom:20px;}</style></head><body><div class="summary"><strong>Pages:</strong> ${data.length} &nbsp;·&nbsp; <strong>Blocks:</strong> ${totalBlocks} &nbsp;·&nbsp; <strong>Chars:</strong> ${totalChars}</div>${pages}</body></html>`);
+        w.document.close();
+    } catch (e) {
+        alert(`Inspect failed: ${e.message}`);
+    }
+};
+
+// commentary checkbox UI binding
+(function bindCommentaryToggle() {
+    const cb = document.getElementById('commentary-cb');
+    const lbl = document.getElementById('commentary-toggle');
+    cb.addEventListener('change', () => {
+        lbl.classList.toggle('active', cb.checked);
+        updateAskButtonState();
+    });
+})();
+
+function updateAskButtonState() {
+    const btn = document.getElementById('ask-btn');
+    const input = document.getElementById('question-input');
+    const cb = document.getElementById('commentary-cb');
+    if (input.disabled) { btn.disabled = true; btn.title = 'Upload a PDF first'; return; }
+    if (cb.checked && !_currentSelection) {
+        btn.disabled = true;
+        btn.title = 'Select text in the PDF first (commentary mode)';
+        return;
+    }
+    btn.disabled = false;
+    btn.title = '';
+}
+
+function showWorkingMessage(mode) {
+    clearWorkingMessage();
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-message ai pending';
+    div.setAttribute('aria-live', 'polite');
+
+    const dots = document.createElement('span');
+    dots.className = 'thinking-mark';
+    dots.setAttribute('aria-hidden', 'true');
+    dots.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+
+    const label = document.createElement('span');
+    label.textContent = mode === 'commentary' ? 'Commenting on selection' : 'Finding highlights';
+
+    div.append(dots, label);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    _pendingMessage = div;
+}
+
+function clearWorkingMessage() {
+    if (_pendingMessage && _pendingMessage.parentNode) {
+        _pendingMessage.remove();
+    }
+    _pendingMessage = null;
+}
+
+// ── QUESTION/ASK ──
+window.askQuestion = async function() {
+    const input = document.getElementById('question-input');
+    const btn = document.getElementById('ask-btn');
+    const cb = document.getElementById('commentary-cb');
+    const question = input.value.trim();
+
+    if (!question) return;
+    if (!_currentPdfId) { alert('Upload a PDF first.'); return; }
+
+    const apiKey = getApiKey();
+    if (!apiKey) { alert('Set your OpenRouter API key in the sidebar (☰ Archive).'); return; }
+    if (!apiKey.startsWith('sk-or-')) { alert('API key must start with sk-or-'); return; }
+
+    const commentaryMode = cb.checked;
+    if (commentaryMode && !_currentSelection) {
+        alert('Commentary mode requires a text selection. Drag-select text in the paper first.');
+        return;
+    }
+
+    const mode = commentaryMode ? 'commentary' : 'highlights';
+    const selectedText = commentaryMode ? _currentSelection : null;
+
+    input.value = '';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>ASKING';
+
+    const userPrefix = commentaryMode ? '[comment] ' : '';
+    const userMessageEl = addChatMessage('user', userPrefix + question);
+    showWorkingMessage(mode);
+
+    try {
+        const resp = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pdf_id: _currentPdfId,
+                question,
+                model: getModel(),
+                api_key: apiKey,
+                mode,
+                selected_text: selectedText,
+            }),
+        });
+
+        if (!resp.ok) {
+            const err = await resp.text();
+            clearWorkingMessage();
+            addChatMessage('ai', `⚠️ ${err}`);
+            return;
+        }
+
+        const result = await resp.json();
+        clearWorkingMessage();
+
+        if (result.mode === 'commentary') {
+            addChatMessage('ai', result.answer || '(empty commentary)');
+        } else {
+            // highlights mode — render rects + legend, log a meta line, NO AI commentary
+            const legend = result.legend || [];
+            const highlights = result.highlights || [];
+            const run = addHighlightRun(question, legend, highlights);
+            bindChatMessageToRun(userMessageEl, run.id);
+            renderChatPromptSelection();
+            if (_currentPdfId) saveChatHistory(_currentPdfId, getChatMessages());
+            const n = highlights.length;
+            if (!n) {
+                const bar = document.getElementById('legend-bar');
+                if (bar) bar.innerHTML = '<span style="font-weight:400;">No matching passages found.</span>';
+            }
+            addChatMessage('meta', `→ ${n} highlight${n === 1 ? '' : 's'} applied to new prompt set`);
+        }
+
+    } catch (e) {
+        clearWorkingMessage();
+        addChatMessage('ai', `⚠️ ${e.message}`);
+    } finally {
+        clearWorkingMessage();
+        btn.disabled = false;
+        btn.textContent = 'ASK';
+        updateAskButtonState();
+    }
+};
+
+function addChatMessage(role, text, options = {}) {
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `chat-message ${role}`;
+    div.textContent = text;
+    if (role === 'user' && options.runId) bindChatMessageToRun(div, options.runId);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    renderChatPromptSelection();
+    if (_currentPdfId) saveChatHistory(_currentPdfId, getChatMessages());
+    return div;
+}
+
+function getChatMessages() {
+    const container = document.getElementById('chat-messages');
+    return Array.from(container.children).map(el => {
+        let role = 'ai';
+        if (el.classList.contains('user')) role = 'user';
+        else if (el.classList.contains('meta')) role = 'meta';
+        return { role, text: el.textContent, runId: el.dataset.runId || null };
+    });
+}
+
+function loadChatHistory(id) {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '';
+    const msgs = getChatHistory(id);
+    msgs.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `chat-message ${m.role || 'ai'}`;
+        div.textContent = m.text;
+        if ((m.role || 'ai') === 'user' && m.runId) bindChatMessageToRun(div, m.runId);
+        container.appendChild(div);
+    });
+    renderChatPromptSelection();
+    if (_currentPdfId) saveChatHistory(_currentPdfId, getChatMessages());
+    container.scrollTop = container.scrollHeight;
+}
+
+function clearViewer() {
+    _pdfDoc = null;
+    _currentPdfId = null;
+    _pageCanvases = [];
+    _pageScales = [];
+    _highlightRuns = [];
+    _activeHighlightRunId = null;
+    _currentLegend = [];
+    _currentHighlights = [];
+    _highlightTargets = new Map();
+    document.getElementById('main-area').innerHTML = `
+        <div class="dropzone" id="dropzone">
+            📄 Drop your academic paper here<br/>
+            <span style="font-size:0.7rem;">or click to browse &hellip;</span>
+        </div>
+        <input type="file" id="file-input" accept=".pdf" style="display:none;" />
+    `;
+    renderChatPromptSelection();
+    renderHighlightSurfaces([], []);
+    document.getElementById('chat-messages').innerHTML = '';
+    document.getElementById('pdf-filename').textContent = '—';
+    document.getElementById('question-input').disabled = true;
+    setSelection('');
+    updatePanelMeta(null);
+    setupDropzone();
+    updateAskButtonState();
+}
+
+// ── INIT ──
+{
+    document.getElementById('question-input').disabled = true;
+    updateAskButtonState();
+}
+
+</script>
+</body>
+</html>
